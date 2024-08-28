@@ -3,7 +3,7 @@ api_id: your_api_id
 chat_id: telegram_chat_id
 download_path: path_to_downloaded_files
 pagination_limit: 100
-chat_number_limit: 1000
+chat_number_limit: 200
 last_read_message_id: 0
 ids_to_retry: []
 media_types:
