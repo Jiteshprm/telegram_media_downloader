@@ -2,7 +2,7 @@
 import asyncio
 import logging
 import os
-from datetime import datetime, timedelta
+import sys
 from typing import List, Optional, Tuple, Union
 
 import pyrogram
@@ -412,5 +412,6 @@ def main():
 
 
 if __name__ == "__main__":
-    print_meta(logger)
+    config_file = sys.argv[1]
+    print_meta(logger, config_file)
     main()

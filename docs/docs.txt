@@ -1,0 +1,24 @@
+systemctl list-timers
+systemd-run --user --on-calendar='*:*:0/5' --timer-property=AccuracySec=100ms env
+systemctl list-timers --user
+journalctl --user -u run-r4b60fff315d84deb9f5997ca6b623f3c.service
+systemctl --user stop run-r4b60fff315d84deb9f5997ca6b623f3c.timer
+journalctl -u telegram-media-downloader-scheduler.service
+
+
+systemctl list-timers --user
+systemctl --user stop 1887352-start* 1887354-end*
+
+systemctl list-timers
+systemctl stop telegram-media-downloader-scheduler*
+
+
+    # systemd-analyze calendar --iterations=2 '0/2:30:00'
+      Original form: 0/2:30:00
+    Normalized form: *-*-* 00/2:30:00
+        Next elapse: Fri 2023-01-20 16:30:00 EET
+           (in UTC): Fri 2023-01-20 14:30:00 UTC
+           From now: 1h 22min left
+           Iter. #2: Fri 2023-01-20 18:30:00 EET
+           (in UTC): Fri 2023-01-20 16:30:00 UTC
+           From now: 3h 22min left

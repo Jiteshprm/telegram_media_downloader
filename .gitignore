@@ -42,6 +42,7 @@ wheels/
 .venv
 venv/
 ENV/
+conf/
 include/
 pip-selfcheck.json
 lib64

@@ -1,0 +1,25 @@
+[Unit]
+Description=Telegram Media Downloader
+# the next line uses your shell script to send an email message if the service fails
+# the name of the service is passed as the first and only parameter
+#OnFailure=notify@%n.service
+
+[Service]
+User=pi
+# The configuration file application.properties should be here:
+
+#change this to your workspace
+WorkingDirectory=/home/pi/telegram_media_downloader
+
+#path to executable.
+#executable is a bash script which calls jar file
+ExecStart=/home/pi/telegram_media_downloader/telegram-media-downloader-run.sh
+
+SuccessExitStatus=0
+TimeoutStopSec=10
+#Restart=on-failure
+#RestartSec=10800
+# 10800 = 3h
+
+[Install]
+WantedBy=multi-user.target

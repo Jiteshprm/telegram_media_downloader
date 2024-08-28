@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Telegram Media Downloader service periodically
+
+[Timer]
+Unit=telegram-media-downloader-scheduler.service
+OnCalendar=*-*-* 00/4:30:00
+
+[Install]
+WantedBy=timers.target

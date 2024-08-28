@@ -11,7 +11,7 @@ SYSTEM_VERSION = f"{platform.system()} {platform.release()}"
 LANG_CODE = "en"
 
 
-def print_meta(logger):
+def print_meta(logger, config_file):
     """Prints meta-data of the downloader script."""
     console = Console()
     # pylint: disable = C0301
@@ -21,3 +21,4 @@ def print_meta(logger):
     console.log(f"Licensed under the terms of the {__license__}", end="\n\n")
     logger.info(f"Device: {DEVICE_MODEL} - {APP_VERSION}")
     logger.info(f"System: {SYSTEM_VERSION} ({LANG_CODE.upper()})")
+    logger.info(f"Config File: {config_file}")
