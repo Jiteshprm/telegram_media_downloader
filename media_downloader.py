@@ -28,10 +28,9 @@ logger = logging.getLogger("media_downloader")
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 FAILED_IDS: list = []
 DOWNLOADED_IDS: list = []
-CONFIG_FILE = "config.yaml"
 
 
-def update_config(config: dict):
+def update_config(config_file: str, config: dict):
     """
     Update existing configuration file.
 
@@ -43,7 +42,7 @@ def update_config(config: dict):
     config["ids_to_retry"] = (
         list(set(config["ids_to_retry"]) - set(DOWNLOADED_IDS)) + FAILED_IDS
     )
-    with open(CONFIG_FILE, "w") as yaml_file:
+    with open(config_file, "w") as yaml_file:
         yaml.dump(config, yaml_file, default_flow_style=False)
     logger.info("Updated last read message_id to config file")
 
@@ -393,9 +392,9 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     return config
 
 
-def main():
+def main(config_file: str):
     """Main function of the downloader."""
-    with open(os.path.join(THIS_DIR, CONFIG_FILE)) as f:
+    with open(os.path.join(THIS_DIR, config_file)) as f:
         config = yaml.safe_load(f)
     updated_config = asyncio.get_event_loop().run_until_complete(
         begin_import(config, pagination_limit=config.get("pagination_limit"))
@@ -407,11 +406,11 @@ def main():
             "These files will be downloaded on the next run.",
             len(set(FAILED_IDS)),
         )
-    update_config(updated_config)
+    update_config(config_file, updated_config)
     check_for_updates()
 
 
 if __name__ == "__main__":
     config_file = sys.argv[1]
     print_meta(logger, config_file)
-    main()
+    main(config_file)
