@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import os
+from datetime import datetime, timedelta
 from typing import List, Optional, Tuple, Union
 
 import pyrogram
@@ -93,6 +94,7 @@ def _is_exist(file_path: str) -> bool:
 async def _get_media_meta(
     media_obj: Union[Audio, Document, Photo, Video, VideoNote, Voice],
     _type: str,
+    download_path: str,
 ) -> Tuple[str, Optional[str]]:
     """Extract file name and file id from media object.
 
@@ -118,7 +120,7 @@ async def _get_media_meta(
         # pylint: disable = C0209
         file_format = media_obj.mime_type.split("/")[-1]  # type: ignore
         file_name: str = os.path.join(
-            THIS_DIR,
+            download_path,
             _type,
             "{}_{}.{}".format(
                 _type,
@@ -126,10 +128,24 @@ async def _get_media_meta(
                 file_format,
             ),
         )
+    elif _type in ["photo"]:
+        file_name = os.path.join(
+            download_path,
+            str(getattr(media_obj, "date", None))[:7],
+            str(getattr(media_obj, "date", None))[:10],
+            str(getattr(media_obj, "date", None))[:19].replace(" ","_").replace(":","-") + "-" +
+            getattr(media_obj, "file_unique_id", None) +
+            ".jpg"
+        )
     else:
         file_name = os.path.join(
-            THIS_DIR, _type, getattr(media_obj, "file_name", None) or ""
+            download_path,
+            str(getattr(media_obj, "date", None))[:7],
+            str(getattr(media_obj, "date", None))[:10],
+            str(getattr(media_obj, "date", None))[:19].replace(" ","_").replace(":","-") + "-" +
+            getattr(media_obj, "file_name", None) or ""
         )
+
     return file_name, file_format
 
 
@@ -138,6 +154,7 @@ async def download_media(
     message: pyrogram.types.Message,
     media_types: List[str],
     file_formats: dict,
+    download_paths: str,
 ):
     """
     Download media from Telegram.
@@ -178,15 +195,17 @@ async def download_media(
                 _media = getattr(message, _type, None)
                 if _media is None:
                     continue
-                file_name, file_format = await _get_media_meta(_media, _type)
+                file_name, file_format = await _get_media_meta(_media, _type, download_paths)
                 if _can_download(_type, file_formats, file_format):
                     if _is_exist(file_name):
-                        file_name = get_next_name(file_name)
-                        download_path = await client.download_media(
-                            message, file_name=file_name
-                        )
-                        # pylint: disable = C0301
-                        download_path = manage_duplicate_file(download_path)  # type: ignore
+                        logger.info("Media downloaded already exists - %s", file_name)
+                        download_path = file_name
+                        # file_name = get_next_name(file_name)
+                        # download_path = await client.download_media(
+                        #     message, file_name=file_name
+                        # )
+                        # # pylint: disable = C0301
+                        # download_path = manage_duplicate_file(download_path)  # type: ignore
                     else:
                         download_path = await client.download_media(
                             message, file_name=file_name
@@ -242,6 +261,7 @@ async def process_messages(
     messages: List[pyrogram.types.Message],
     media_types: List[str],
     file_formats: dict,
+    download_path: str,
 ) -> int:
     """
     Download media from Telegram.
@@ -273,7 +293,7 @@ async def process_messages(
     """
     message_ids = await asyncio.gather(
         *[
-            download_media(client, message, media_types, file_formats)
+            download_media(client, message, media_types, file_formats, download_path)
             for message in messages
         ]
     )
@@ -310,6 +330,16 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     )
     await client.start()
     last_read_message_id: int = config["last_read_message_id"]
+    download_path_yaml = config.get("download_path")
+    if download_path_yaml is None:
+        download_path = THIS_DIR
+    else:
+        download_path = download_path_yaml
+    max_days: int = config.get("max_days")
+    today = datetime.now()
+    max_days_delta = timedelta(days=max_days)
+
+
     messages_iter = client.get_chat_history(
         config["chat_id"], offset_id=last_read_message_id
     )
@@ -327,18 +357,26 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     async for message in messages_iter:  # type: ignore
         if pagination_count != pagination_limit:
             pagination_count += 1
-            messages_list.append(message)
+            msg_time = getattr(message, "date", None)
+            difference = today - msg_time
+            if difference <= max_days_delta:
+                messages_list.append(message)
+            else:
+                logger.info("This message is older than %d day. Timestamp is %s", max_days, str(msg_time))
+
+
         else:
             last_read_message_id = await process_messages(
                 client,
                 messages_list,
                 config["media_types"],
                 config["file_formats"],
+                download_path
             )
             pagination_count = 0
             messages_list = []
             messages_list.append(message)
-            config["last_read_message_id"] = last_read_message_id
+            # config["last_read_message_id"] = last_read_message_id
             update_config(config)
     if messages_list:
         last_read_message_id = await process_messages(
@@ -346,6 +384,7 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
             messages_list,
             config["media_types"],
             config["file_formats"],
+            download_path
         )
 
     await client.stop()
@@ -358,7 +397,7 @@ def main():
     with open(os.path.join(THIS_DIR, "config.yaml")) as f:
         config = yaml.safe_load(f)
     updated_config = asyncio.get_event_loop().run_until_complete(
-        begin_import(config, pagination_limit=100)
+        begin_import(config, pagination_limit=config.get("pagination_limit"))
     )
     if FAILED_IDS:
         logger.info(
