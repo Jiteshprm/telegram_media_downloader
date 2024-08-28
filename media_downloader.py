@@ -335,13 +335,14 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
         download_path = THIS_DIR
     else:
         download_path = download_path_yaml
-    max_days: int = config.get("max_days")
-    today = datetime.now()
-    max_days_delta = timedelta(days=max_days)
+    # max_days: int = config.get("max_days")
+    # today = datetime.now()
+    # max_days_delta = timedelta(days=max_days)
+    chat_number_limit: int = config.get("chat_number_limit")
 
 
     messages_iter = client.get_chat_history(
-        config["chat_id"], offset_id=last_read_message_id
+        config["chat_id"], limit=chat_number_limit
     )
     messages_list: list = []
     pagination_count: int = 0
@@ -357,14 +358,13 @@ async def begin_import(config: dict, pagination_limit: int) -> dict:
     async for message in messages_iter:  # type: ignore
         if pagination_count != pagination_limit:
             pagination_count += 1
-            msg_time = getattr(message, "date", None)
-            difference = today - msg_time
-            if difference <= max_days_delta:
-                messages_list.append(message)
-            else:
-                logger.info("This message is older than %d day. Timestamp is %s", max_days, str(msg_time))
-
-
+            messages_list.append(message)
+            # msg_time = getattr(message, "date", None)
+            # difference = today - msg_time
+            # if difference <= max_days_delta:
+            #     messages_list.append(message)
+            # else:
+            #     logger.info("This message is older than %d day. Timestamp is %s", max_days, str(msg_time))
         else:
             last_read_message_id = await process_messages(
                 client,
