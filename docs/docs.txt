@@ -6,6 +6,10 @@ systemctl --user stop run-r4b60fff315d84deb9f5997ca6b623f3c.timer
 journalctl -u telegram-media-downloader-scheduler.service
 
 
+docker build -t my-python-app .
+docker run my-python-app
+
+
 systemctl list-timers --user
 systemctl --user stop 1887352-start* 1887354-end*
 
